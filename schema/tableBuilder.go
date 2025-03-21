@@ -7,7 +7,7 @@ type Table struct {
 	Name string
 }
 
-func (s *Schema) CreateTable(tableName string, callback func(table *Table)) {
+func (s *Schema) CreateTable(tableName string, callback func()) {
 
 }
 
@@ -15,7 +15,7 @@ func (s *Schema) DropTable(tableName string) {
 
 }
 
-func (s *Schema) Table(tableName string, callback func(table *Table)) {
+func (s *Schema) Table(tableName string, callback func()) {
 
 }
 
