@@ -123,18 +123,16 @@ import (
 	%q
 )
 
-func Up(ctx context.Context, s jone.Schema) error {
-	// TODO: implement Up migration
-	return nil
+func Up(ctx context.Context, s jone.Schema) {
+
 }
 
-func Down(ctx context.Context, s jone.Schema) error {
-	// TODO: implement Down migration
-	return nil
+func Down(ctx context.Context, s jone.Schema) {
+
 }
 `, "github.com/Grandbusta/jone")
 
-	if err := os.WriteFile(filepath.Join(folderPath, "mig.go"), []byte(stub), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(folderPath, "migration.go"), []byte(stub), 0o644); err != nil {
 		fmt.Printf("Error writing migration file: %v\n", err)
 		return
 	}
