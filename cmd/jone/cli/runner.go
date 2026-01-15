@@ -54,10 +54,12 @@ func runMigrations(command string) error {
 
 func generateRunner(runnerPath, modulePath string) error {
 	registryPackage := modulePath + "/" + MigrationsPath + "/registry"
+	configPackage := modulePath + "/" + JoneFolderPath
 
 	content, err := templates.RenderRunner(templates.RunnerData{
 		RuntimePackage:  RuntimePackage,
 		RegistryPackage: registryPackage,
+		ConfigPackage:   configPackage,
 	})
 	if err != nil {
 		return fmt.Errorf("rendering runner template: %w", err)

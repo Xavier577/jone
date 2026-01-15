@@ -13,11 +13,11 @@ import (
 	"{{ .RuntimePackage }}"
 )
 
-func Up(s jone.Schema) {
+func Up(s *jone.Schema) {
 
 }
 
-func Down(s jone.Schema) {
+func Down(s *jone.Schema) {
 
 }
 `

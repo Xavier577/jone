@@ -6,6 +6,7 @@ import "text/template"
 type RunnerData struct {
 	RuntimePackage  string
 	RegistryPackage string
+	ConfigPackage   string
 }
 
 const runnerTemplateContent = `
@@ -19,6 +20,7 @@ import (
 
 	"{{ .RuntimePackage }}"
 	"{{ .RegistryPackage }}"
+	joneconfig "{{ .ConfigPackage }}"
 )
 
 func main() {
@@ -27,11 +29,19 @@ func main() {
 		os.Exit(1)
 	}
 
+	cfg := &joneconfig.Config
+
 	switch os.Args[1] {
 	case "migrate:up":
-		jone.RunUp(registry.Registrations)
+		if err := jone.RunUp(cfg, registry.Registrations); err != nil {
+			fmt.Printf("Migration failed: %v\n", err)
+			os.Exit(1)
+		}
 	case "migrate:down":
-		jone.RunDown(registry.Registrations)
+		if err := jone.RunDown(cfg, registry.Registrations); err != nil {
+			fmt.Printf("Rollback failed: %v\n", err)
+			os.Exit(1)
+		}
 	default:
 		fmt.Printf("Unknown command: %s\n", os.Args[1])
 		os.Exit(1)

@@ -1,78 +1,51 @@
+// Package jone provides a database migration and query building library.
+//
+// This package re-exports types from sub-packages for convenient access.
+// For more control, import the specific sub-packages directly:
+//
+//	import "github.com/Grandbusta/jone/config"
+//	import "github.com/Grandbusta/jone/schema"
+//	import "github.com/Grandbusta/jone/migration"
+//	import "github.com/Grandbusta/jone/dialect"
+//	import "github.com/Grandbusta/jone/query"
 package jone
 
-type Config struct {
-	Client     string
-	Connection Connection
-	Migrations Migrations
-}
+import (
+	"github.com/Grandbusta/jone/config"
+	"github.com/Grandbusta/jone/dialect"
+	"github.com/Grandbusta/jone/migration"
+	"github.com/Grandbusta/jone/schema"
+	"github.com/Grandbusta/jone/types"
+)
 
-type Connection struct {
-	User     string
-	Password string
-	Database string
-	Port     string
-	Host     string
-}
+// Configuration types (re-exported from config package)
+type Config = config.Config
+type Connection = config.Connection
+type Migrations = config.Migrations
 
-type Migrations struct {
-	TableName string
-}
+// Schema types (re-exported from schema package)
+type Schema = schema.Schema
+type Table = schema.Table
+type Column = schema.Column
 
-type Registration struct {
-	Name string
-	Up   func(Schema)
-	Down func(Schema)
-}
+// Core types (re-exported from types package)
+type CoreTable = types.Table
+type CoreColumn = types.Column
 
-type CreateTableBuilder struct {
-	Table *Table
-}
+// NewSchema creates a new Schema with the given config.
+var NewSchema = schema.New
 
-type Table struct {
-	Name    string
-	Columns []*Column
-}
+// Migration types (re-exported from migration package)
+type Registration = migration.Registration
 
-type Column struct {
-	name       string
-	dataType   string
-	primaryKey bool
-	notNull    bool
-	unique     bool
-}
+// RunUp executes all Up migrations in order.
+var RunUp = migration.RunUp
 
-func (t *Table) String(columnName string) *Column {
-	col := &Column{name: columnName, dataType: "varchar"}
-	t.Columns = append(t.Columns, col)
-	return col
-}
+// RunDown executes all Down migrations in reverse order.
+var RunDown = migration.RunDown
 
-func (t *Table) Int(columnName string) *Column {
-	col := &Column{name: columnName, dataType: "int"}
-	t.Columns = append(t.Columns, col)
-	return col
-}
+// Dialect types and functions (re-exported from dialect package)
+type Dialect = dialect.Dialect
 
-func (c *Column) PrimaryKey() *Column {
-	c.primaryKey = true
-	return c
-}
-
-func (c *Column) NotNull() *Column {
-	c.notNull = true
-	return c
-}
-
-func (c *Column) Unique() *Column {
-	c.unique = true
-	return c
-}
-
-type Schema struct {
-}
-
-func (s *Schema) CreateTable(name string, builder func(t *Table)) error {
-	t := Table{Name: name}
-	builder(&t)
-	return nil
-}
+// GetDialect returns a dialect implementation by name.
+var GetDialect = dialect.GetDialect
