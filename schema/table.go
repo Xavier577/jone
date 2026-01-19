@@ -1,6 +1,8 @@
 package schema
 
 import (
+	"strings"
+
 	"github.com/Grandbusta/jone/types"
 )
 
@@ -114,8 +116,39 @@ func (t *Table) Unique(columns ...string) *IndexBuilder {
 	return b
 }
 
-// DropIndex drops an index by name.
-func (t *Table) DropIndex(name string) *Table {
+// DropIndex drops an index by columns (auto-generates the index name).
+// Uses the same naming convention as Index(): idx_tablename_col1_col2
+func (t *Table) DropIndex(columns ...string) *Table {
+	name := "idx_" + t.Name + "_" + strings.Join(columns, "_")
+	t.Actions = append(t.Actions, &types.TableAction{
+		Type:  types.ActionDropIndex,
+		Index: &types.Index{Name: name},
+	})
+	return t
+}
+
+// DropIndexByName drops an index by its explicit name.
+func (t *Table) DropIndexByName(name string) *Table {
+	t.Actions = append(t.Actions, &types.TableAction{
+		Type:  types.ActionDropIndex,
+		Index: &types.Index{Name: name},
+	})
+	return t
+}
+
+// DropUnique drops a unique index by columns (auto-generates the index name).
+// Uses the same naming convention as Unique(): uq_tablename_col1_col2
+func (t *Table) DropUnique(columns ...string) *Table {
+	name := "uq_" + t.Name + "_" + strings.Join(columns, "_")
+	t.Actions = append(t.Actions, &types.TableAction{
+		Type:  types.ActionDropIndex,
+		Index: &types.Index{Name: name},
+	})
+	return t
+}
+
+// DropUniqueByName drops a unique index by its explicit name.
+func (t *Table) DropUniqueByName(name string) *Table {
 	t.Actions = append(t.Actions, &types.TableAction{
 		Type:  types.ActionDropIndex,
 		Index: &types.Index{Name: name},
