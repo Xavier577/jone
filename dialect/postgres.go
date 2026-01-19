@@ -173,9 +173,44 @@ func (d *PostgresDialect) AlterTableSQL(tableName string, actions []*types.Table
 			statements = append(statements, d.SetColumnDefaultSQL(tableName, action.Name, action.DefaultValue))
 		case types.ActionDropColumnDefault:
 			statements = append(statements, d.DropColumnDefaultSQL(tableName, action.Name))
+		case types.ActionCreateIndex:
+			statements = append(statements, d.CreateIndexSQL(tableName, action.Index))
+		case types.ActionDropIndex:
+			statements = append(statements, d.DropIndexSQL(tableName, action.Index.Name))
 		}
 	}
 	return statements
+}
+
+// CreateIndexSQL generates a CREATE INDEX statement.
+func (d *PostgresDialect) CreateIndexSQL(tableName string, idx *types.Index) string {
+	unique := ""
+	if idx.IsUnique {
+		unique = "UNIQUE "
+	}
+
+	using := ""
+	if idx.Method != "" {
+		using = fmt.Sprintf(" USING %s", idx.Method)
+	}
+
+	cols := make([]string, len(idx.Columns))
+	for i, c := range idx.Columns {
+		cols[i] = d.QuoteIdentifier(c)
+	}
+
+	return fmt.Sprintf("CREATE %sINDEX %s ON %s%s (%s);",
+		unique,
+		d.QuoteIdentifier(idx.Name),
+		d.QuoteIdentifier(tableName),
+		using,
+		strings.Join(cols, ", "))
+}
+
+// DropIndexSQL generates a DROP INDEX statement.
+// PostgreSQL doesn't require tableName but accepts it for interface compatibility.
+func (d *PostgresDialect) DropIndexSQL(tableName, name string) string {
+	return fmt.Sprintf("DROP INDEX %s;", d.QuoteIdentifier(name))
 }
 
 // DropColumnSQL generates an ALTER TABLE DROP COLUMN statement.

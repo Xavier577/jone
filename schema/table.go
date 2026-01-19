@@ -92,6 +92,37 @@ func (t *Table) RenameColumn(oldName, newName string) *Table {
 	return t
 }
 
+// Index creates an index on the specified columns.
+// Returns an IndexBuilder for optional chaining (e.g., .Name(), .Using()).
+func (t *Table) Index(columns ...string) *IndexBuilder {
+	b := &IndexBuilder{table: t, columns: columns, unique: false}
+	t.Actions = append(t.Actions, &types.TableAction{
+		Type:  types.ActionCreateIndex,
+		Index: b.build(),
+	})
+	return b
+}
+
+// Unique creates a unique index on the specified columns.
+// Returns an IndexBuilder for optional chaining (e.g., .Name(), .Using()).
+func (t *Table) Unique(columns ...string) *IndexBuilder {
+	b := &IndexBuilder{table: t, columns: columns, unique: true}
+	t.Actions = append(t.Actions, &types.TableAction{
+		Type:  types.ActionCreateIndex,
+		Index: b.build(),
+	})
+	return b
+}
+
+// DropIndex drops an index by name.
+func (t *Table) DropIndex(name string) *Table {
+	t.Actions = append(t.Actions, &types.TableAction{
+		Type:  types.ActionDropIndex,
+		Index: &types.Index{Name: name},
+	})
+	return t
+}
+
 // String creates a VARCHAR column.
 func (t *Table) String(name string) *Column {
 	// TODO: Support length

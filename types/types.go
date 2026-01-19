@@ -14,7 +14,18 @@ const (
 	ActionDropColumnNotNull ActionType = "drop_column_not_null"
 	ActionSetColumnDefault  ActionType = "set_column_default"
 	ActionDropColumnDefault ActionType = "drop_column_default"
+	ActionCreateIndex       ActionType = "create_index"
+	ActionDropIndex         ActionType = "drop_index"
 )
+
+// Index represents a database index definition.
+type Index struct {
+	Name      string   // Index name (auto-generated if empty)
+	Columns   []string // Columns to index
+	IsUnique  bool     // UNIQUE constraint
+	Method    string   // btree, hash, gin, gist (PostgreSQL)
+	TableName string   // For auto-generating name
+}
 
 // TableAction represents a single alteration operation on a table.
 type TableAction struct {
@@ -23,6 +34,7 @@ type TableAction struct {
 	Name         string  // Column name for drop, old name for rename
 	NewName      string  // New name for rename operations
 	DefaultValue any
+	Index        *Index // For index operations
 }
 
 // Column represents a database column definition.

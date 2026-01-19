@@ -46,6 +46,13 @@ type Dialect interface {
 
 	// RenameColumnSQL generates an ALTER TABLE RENAME COLUMN statement.
 	RenameColumnSQL(tableName, oldName, newName string) string
+
+	// CreateIndexSQL generates a CREATE INDEX statement.
+	CreateIndexSQL(tableName string, index *types.Index) string
+
+	// DropIndexSQL generates a DROP INDEX statement.
+	// MySQL requires tableName; PostgreSQL ignores it.
+	DropIndexSQL(tableName, indexName string) string
 }
 
 // GetDialect returns a dialect implementation by name.

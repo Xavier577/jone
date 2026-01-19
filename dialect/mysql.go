@@ -172,9 +172,40 @@ func (d *MySQLDialect) AlterTableSQL(tableName string, actions []*types.TableAct
 			statements = append(statements, d.SetColumnDefaultSQL(tableName, action.Name, action.DefaultValue))
 		case types.ActionDropColumnDefault:
 			statements = append(statements, d.DropColumnDefaultSQL(tableName, action.Name))
+		case types.ActionCreateIndex:
+			statements = append(statements, d.CreateIndexSQL(tableName, action.Index))
+		case types.ActionDropIndex:
+			statements = append(statements, d.DropIndexSQL(tableName, action.Index.Name))
 		}
 	}
 	return statements
+}
+
+// CreateIndexSQL generates a CREATE INDEX statement.
+func (d *MySQLDialect) CreateIndexSQL(tableName string, idx *types.Index) string {
+	unique := ""
+	if idx.IsUnique {
+		unique = "UNIQUE "
+	}
+
+	cols := make([]string, len(idx.Columns))
+	for i, c := range idx.Columns {
+		cols[i] = d.QuoteIdentifier(c)
+	}
+
+	return fmt.Sprintf("CREATE %sINDEX %s ON %s (%s);",
+		unique,
+		d.QuoteIdentifier(idx.Name),
+		d.QuoteIdentifier(tableName),
+		strings.Join(cols, ", "))
+}
+
+// DropIndexSQL generates a DROP INDEX statement for MySQL.
+// MySQL requires the table name for DROP INDEX.
+func (d *MySQLDialect) DropIndexSQL(tableName, indexName string) string {
+	return fmt.Sprintf("DROP INDEX %s ON %s;",
+		d.QuoteIdentifier(indexName),
+		d.QuoteIdentifier(tableName))
 }
 
 // DropColumnSQL generates an ALTER TABLE DROP COLUMN statement.
