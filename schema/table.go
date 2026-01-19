@@ -187,6 +187,24 @@ func (t *Table) DropForeignByName(name string) *Table {
 	return t
 }
 
+// DropPrimary drops the primary key constraint from the table.
+// Uses the default PostgreSQL naming convention: tablename_pkey
+func (t *Table) DropPrimary() *Table {
+	t.Actions = append(t.Actions, &types.TableAction{
+		Type: types.ActionDropPrimary,
+	})
+	return t
+}
+
+// DropPrimaryByName drops the primary key constraint by explicit constraint name.
+func (t *Table) DropPrimaryByName(constraintName string) *Table {
+	t.Actions = append(t.Actions, &types.TableAction{
+		Type: types.ActionDropPrimary,
+		Name: constraintName,
+	})
+	return t
+}
+
 // String creates a VARCHAR column.
 func (t *Table) String(name string) *Column {
 	// TODO: Support length

@@ -18,6 +18,7 @@ const (
 	ActionDropIndex         ActionType = "drop_index"
 	ActionAddForeignKey     ActionType = "add_foreign_key"
 	ActionDropForeignKey    ActionType = "drop_foreign_key"
+	ActionDropPrimary       ActionType = "drop_primary"
 )
 
 // Index represents a database index definition.

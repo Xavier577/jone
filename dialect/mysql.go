@@ -197,6 +197,8 @@ func (d *MySQLDialect) AlterTableSQL(tableName string, actions []*types.TableAct
 			statements = append(statements, d.AddForeignKeySQL(tableName, action.ForeignKey))
 		case types.ActionDropForeignKey:
 			statements = append(statements, d.DropForeignKeySQL(tableName, action.ForeignKey.Name))
+		case types.ActionDropPrimary:
+			statements = append(statements, d.DropPrimarySQL(tableName, action.Name))
 		}
 	}
 	return statements
@@ -337,4 +339,10 @@ func (d *MySQLDialect) HasColumnSQL(tableName, columnName string) string {
 // Note: MySQL supports inline COMMENT in CREATE TABLE.
 func (d *MySQLDialect) CommentColumnSQL(tableName, columnName, comment string) string {
 	return ""
+}
+
+// DropPrimarySQL returns SQL to drop the primary key constraint in MySQL.
+// Note: MySQL doesn't use constraint names for primary keys.
+func (d *MySQLDialect) DropPrimarySQL(tableName, constraintName string) string {
+	return fmt.Sprintf("ALTER TABLE %s DROP PRIMARY KEY;", d.QuoteIdentifier(tableName))
 }

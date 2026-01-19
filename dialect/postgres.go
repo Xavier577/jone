@@ -195,6 +195,12 @@ func (d *PostgresDialect) AlterTableSQL(tableName string, actions []*types.Table
 			statements = append(statements, d.AddForeignKeySQL(tableName, action.ForeignKey))
 		case types.ActionDropForeignKey:
 			statements = append(statements, d.DropForeignKeySQL(tableName, action.ForeignKey.Name))
+		case types.ActionDropPrimary:
+			constraintName := action.Name
+			if constraintName == "" {
+				constraintName = tableName + "_pkey"
+			}
+			statements = append(statements, d.DropPrimarySQL(tableName, constraintName))
 		}
 	}
 	return statements
@@ -331,4 +337,11 @@ func (d *PostgresDialect) CommentColumnSQL(tableName, columnName, comment string
 		d.QuoteIdentifier(tableName),
 		d.QuoteIdentifier(columnName),
 		comment)
+}
+
+// DropPrimarySQL returns SQL to drop the primary key constraint in PostgreSQL.
+func (d *PostgresDialect) DropPrimarySQL(tableName, constraintName string) string {
+	return fmt.Sprintf("ALTER TABLE %s DROP CONSTRAINT %s;",
+		d.QuoteIdentifier(tableName),
+		d.QuoteIdentifier(constraintName))
 }

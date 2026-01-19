@@ -71,6 +71,9 @@ type Dialect interface {
 
 	// CommentColumnSQL returns SQL to add a comment to a column.
 	CommentColumnSQL(tableName, columnName, comment string) string
+
+	// DropPrimarySQL returns SQL to drop the primary key constraint.
+	DropPrimarySQL(tableName, constraintName string) string
 }
 
 // GetDialect returns a dialect implementation by name.
