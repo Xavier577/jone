@@ -14,7 +14,9 @@ import "{{ .RuntimePackage }}"
 var Config = jone.Config{
 	Client:     "postgresql",
 	Connection: jone.Connection{
-		User:     "username",
+		Host: "localhost",
+		Port: "5432",
+		User:     "postgres",
 		Password: "password",
 		Database: "my_db",
 	},

@@ -7,12 +7,9 @@ import (
 	"github.com/Grandbusta/jone/schema"
 )
 
-// RunUp executes all Up migrations in order using the provided config.
-func RunLatest(cfg *config.Config, registrations []Registration) error {
-	s := schema.New(cfg)
-
-	// TODO: Connect to database using cfg.Connection
-	// For now, running in dry-run mode
+// RunLatest executes all Up migrations in order using the provided schema.
+func RunLatest(cfg *config.Config, registrations []Registration, s *schema.Schema) error {
+	fmt.Println("Running migrations (migrate:latest)...")
 
 	for _, reg := range registrations {
 		fmt.Printf("Running migration: %s (up)\n", reg.Name)
@@ -23,12 +20,9 @@ func RunLatest(cfg *config.Config, registrations []Registration) error {
 	return nil
 }
 
-// RunDown executes all Down migrations in reverse order using the provided config.
-func RunDown(cfg *config.Config, registrations []Registration) error {
-	s := schema.New(cfg)
-
-	// TODO: Connect to database using cfg.Connection
-	// For now, running in dry-run mode
+// RunDown executes all Down migrations in reverse order using the provided schema.
+func RunDown(cfg *config.Config, registrations []Registration, s *schema.Schema) error {
+	fmt.Println("Running rollback (migrate:down)...")
 
 	// Run in reverse order
 	for i := len(registrations) - 1; i >= 0; i-- {

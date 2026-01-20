@@ -18,6 +18,8 @@ import (
 	"fmt"
 	"os"
 
+	_ "github.com/jackc/pgx/v5/stdlib"
+
 	"{{ .RuntimePackage }}"
 	"{{ .RegistryPackage }}"
 	joneconfig "{{ .ConfigPackage }}"
@@ -31,14 +33,22 @@ func main() {
 
 	cfg := &joneconfig.Config
 
+	// Create schema and open database connection
+	s := jone.NewSchema(cfg)
+	if err := s.Open(); err != nil {
+		fmt.Printf("Failed to connect to database: %v\n", err)
+		os.Exit(1)
+	}
+	defer s.Close()
+
 	switch os.Args[1] {
 	case "migrate:latest":
-		if err := jone.RunLatest(cfg, registry.Registrations); err != nil {
+		if err := jone.RunLatest(cfg, registry.Registrations, s); err != nil {
 			fmt.Printf("Migration failed: %v\n", err)
 			os.Exit(1)
 		}
 	case "migrate:down":
-		if err := jone.RunDown(cfg, registry.Registrations); err != nil {
+		if err := jone.RunDown(cfg, registry.Registrations, s); err != nil {
 			fmt.Printf("Rollback failed: %v\n", err)
 			os.Exit(1)
 		}

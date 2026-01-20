@@ -40,6 +40,28 @@ func (s *Schema) SetDB(db *sql.DB) {
 	s.db = db
 }
 
+// Open opens a database connection using the config.
+func (s *Schema) Open() error {
+	dsn := s.config.Connection.DSN()
+	db, err := sql.Open("pgx", dsn)
+	if err != nil {
+		return fmt.Errorf("opening database: %w", err)
+	}
+	if err := db.Ping(); err != nil {
+		return fmt.Errorf("pinging database: %w", err)
+	}
+	s.db = db
+	return nil
+}
+
+// Close closes the database connection.
+func (s *Schema) Close() error {
+	if s.db != nil {
+		return s.db.Close()
+	}
+	return nil
+}
+
 func (s *Schema) Table(name string, builder func(t *Table)) error {
 	t := NewTable(name)
 	builder(t)
