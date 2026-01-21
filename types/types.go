@@ -73,6 +73,7 @@ type Column struct {
 // Table represents a database table definition.
 type Table struct {
 	Name    string
+	Schema  string // Database schema (e.g., "public", "app")
 	Columns []*Column
 	Actions []*TableAction
 }

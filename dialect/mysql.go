@@ -29,19 +29,19 @@ func (d *MySQLDialect) CreateTableSQL(table *types.Table) string {
 
 	return fmt.Sprintf(
 		"CREATE TABLE %s (\n  %s\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;",
-		d.QuoteIdentifier(table.Name),
+		d.QualifyTable(table.Schema, table.Name),
 		strings.Join(columns, ",\n  "),
 	)
 }
 
 // DropTableSQL generates a DROP TABLE statement.
-func (d *MySQLDialect) DropTableSQL(name string) string {
-	return fmt.Sprintf("DROP TABLE %s;", d.QuoteIdentifier(name))
+func (d *MySQLDialect) DropTableSQL(schema, name string) string {
+	return fmt.Sprintf("DROP TABLE %s;", d.QualifyTable(schema, name))
 }
 
 // DropTableIfExistsSQL generates a DROP TABLE IF EXISTS statement.
-func (d *MySQLDialect) DropTableIfExistsSQL(name string) string {
-	return fmt.Sprintf("DROP TABLE IF EXISTS %s;", d.QuoteIdentifier(name))
+func (d *MySQLDialect) DropTableIfExistsSQL(schema, name string) string {
+	return fmt.Sprintf("DROP TABLE IF EXISTS %s;", d.QualifyTable(schema, name))
 }
 
 // CreateTableIfNotExistsSQL generates a CREATE TABLE IF NOT EXISTS statement.
@@ -53,7 +53,7 @@ func (d *MySQLDialect) CreateTableIfNotExistsSQL(table *types.Table) string {
 
 	return fmt.Sprintf(
 		"CREATE TABLE IF NOT EXISTS %s (\n  %s\n);",
-		d.QuoteIdentifier(table.Name),
+		d.QualifyTable(table.Schema, table.Name),
 		strings.Join(columns, ",\n  "),
 	)
 }
@@ -169,43 +169,44 @@ func (d *MySQLDialect) formatDefault(value any) string {
 }
 
 // AlterTableSQL generates ALTER TABLE statements for all actions.
-func (d *MySQLDialect) AlterTableSQL(tableName string, actions []*types.TableAction) []string {
+func (d *MySQLDialect) AlterTableSQL(schema, tableName string, actions []*types.TableAction) []string {
+	qualifiedTable := d.QualifyTable(schema, tableName)
 	var statements []string
 	for _, action := range actions {
 		switch action.Type {
 		case types.ActionDropColumn:
-			statements = append(statements, d.DropColumnSQL(tableName, action.Name))
+			statements = append(statements, d.dropColumnSQL(qualifiedTable, action.Name))
 		case types.ActionAddColumn:
-			statements = append(statements, d.AddColumnSQL(tableName, action.Column))
+			statements = append(statements, d.addColumnSQL(qualifiedTable, action.Column))
 		case types.ActionRenameColumn:
-			statements = append(statements, d.RenameColumnSQL(tableName, action.Name, action.NewName))
+			statements = append(statements, d.renameColumnSQL(qualifiedTable, action.Name, action.NewName))
 		case types.ActionChangeColumnType:
-			statements = append(statements, d.ChangeColumnTypeSQL(tableName, action.Column))
+			statements = append(statements, d.changeColumnTypeSQL(qualifiedTable, action.Column))
 		case types.ActionSetColumnNotNull:
-			statements = append(statements, d.SetColumnNotNullSQL(tableName, action.Name))
+			statements = append(statements, d.setColumnNotNullSQL(qualifiedTable, action.Name))
 		case types.ActionDropColumnNotNull:
-			statements = append(statements, d.DropColumnNotNullSQL(tableName, action.Name))
+			statements = append(statements, d.dropColumnNotNullSQL(qualifiedTable, action.Name))
 		case types.ActionSetColumnDefault:
-			statements = append(statements, d.SetColumnDefaultSQL(tableName, action.Name, action.DefaultValue))
+			statements = append(statements, d.setColumnDefaultSQL(qualifiedTable, action.Name, action.DefaultValue))
 		case types.ActionDropColumnDefault:
-			statements = append(statements, d.DropColumnDefaultSQL(tableName, action.Name))
+			statements = append(statements, d.dropColumnDefaultSQL(qualifiedTable, action.Name))
 		case types.ActionCreateIndex:
-			statements = append(statements, d.CreateIndexSQL(tableName, action.Index))
+			statements = append(statements, d.createIndexSQL(qualifiedTable, action.Index))
 		case types.ActionDropIndex:
-			statements = append(statements, d.DropIndexSQL(tableName, action.Index.Name))
+			statements = append(statements, d.dropIndexSQL(qualifiedTable, action.Index.Name))
 		case types.ActionAddForeignKey:
-			statements = append(statements, d.AddForeignKeySQL(tableName, action.ForeignKey))
+			statements = append(statements, d.addForeignKeySQL(qualifiedTable, action.ForeignKey))
 		case types.ActionDropForeignKey:
-			statements = append(statements, d.DropForeignKeySQL(tableName, action.ForeignKey.Name))
+			statements = append(statements, d.dropForeignKeySQL(qualifiedTable, action.ForeignKey.Name))
 		case types.ActionDropPrimary:
-			statements = append(statements, d.DropPrimarySQL(tableName, action.Name))
+			statements = append(statements, d.dropPrimarySQL(qualifiedTable, action.Name))
 		}
 	}
 	return statements
 }
 
-// CreateIndexSQL generates a CREATE INDEX statement.
-func (d *MySQLDialect) CreateIndexSQL(tableName string, idx *types.Index) string {
+// createIndexSQL generates a CREATE INDEX statement.
+func (d *MySQLDialect) createIndexSQL(tableName string, idx *types.Index) string {
 	unique := ""
 	if idx.IsUnique {
 		unique = "UNIQUE "
@@ -219,22 +220,24 @@ func (d *MySQLDialect) CreateIndexSQL(tableName string, idx *types.Index) string
 	return fmt.Sprintf("CREATE %sINDEX %s ON %s (%s);",
 		unique,
 		d.QuoteIdentifier(idx.Name),
-		d.QuoteIdentifier(tableName),
+		tableName,
 		strings.Join(cols, ", "))
 }
 
-// DropIndexSQL generates a DROP INDEX statement for MySQL.
+// dropIndexSQL generates a DROP INDEX statement for MySQL.
 // MySQL requires the table name for DROP INDEX.
-func (d *MySQLDialect) DropIndexSQL(tableName, indexName string) string {
+// tableName should be pre-qualified (e.g., from QualifyTable).
+func (d *MySQLDialect) dropIndexSQL(tableName, indexName string) string {
 	return fmt.Sprintf("DROP INDEX %s ON %s;",
 		d.QuoteIdentifier(indexName),
-		d.QuoteIdentifier(tableName))
+		tableName)
 }
 
-// AddForeignKeySQL generates an ALTER TABLE ADD CONSTRAINT FOREIGN KEY statement.
-func (d *MySQLDialect) AddForeignKeySQL(tableName string, fk *types.ForeignKey) string {
+// addForeignKeySQL generates an ALTER TABLE ADD CONSTRAINT FOREIGN KEY statement.
+// tableName should be pre-qualified (e.g., from QualifyTable).
+func (d *MySQLDialect) addForeignKeySQL(tableName string, fk *types.ForeignKey) string {
 	sql := fmt.Sprintf("ALTER TABLE %s ADD CONSTRAINT %s FOREIGN KEY (%s) REFERENCES %s(%s)",
-		d.QuoteIdentifier(tableName),
+		tableName,
 		d.QuoteIdentifier(fk.Name),
 		d.QuoteIdentifier(fk.Column),
 		d.QuoteIdentifier(fk.RefTable),
@@ -249,100 +252,125 @@ func (d *MySQLDialect) AddForeignKeySQL(tableName string, fk *types.ForeignKey) 
 	return sql + ";"
 }
 
-// DropForeignKeySQL generates an ALTER TABLE DROP FOREIGN KEY statement.
+// dropForeignKeySQL generates an ALTER TABLE DROP FOREIGN KEY statement.
 // MySQL uses DROP FOREIGN KEY instead of DROP CONSTRAINT.
-func (d *MySQLDialect) DropForeignKeySQL(tableName, fkName string) string {
+// tableName should be pre-qualified (e.g., from QualifyTable).
+func (d *MySQLDialect) dropForeignKeySQL(tableName, fkName string) string {
 	return fmt.Sprintf("ALTER TABLE %s DROP FOREIGN KEY %s;",
-		d.QuoteIdentifier(tableName),
+		tableName,
 		d.QuoteIdentifier(fkName))
 }
 
-// DropColumnSQL generates an ALTER TABLE DROP COLUMN statement.
-func (d *MySQLDialect) DropColumnSQL(tableName, columnName string) string {
+// dropColumnSQL generates an ALTER TABLE DROP COLUMN statement.
+// dropColumnSQL generates an ALTER TABLE DROP COLUMN statement.
+// tableName should be pre-qualified (e.g., from QualifyTable).
+func (d *MySQLDialect) dropColumnSQL(tableName, columnName string) string {
 	return fmt.Sprintf("ALTER TABLE %s DROP COLUMN %s;",
-		d.QuoteIdentifier(tableName),
+		tableName,
 		d.QuoteIdentifier(columnName))
 }
 
-// AddColumnSQL generates an ALTER TABLE ADD COLUMN statement.
-func (d *MySQLDialect) AddColumnSQL(tableName string, column *types.Column) string {
+// addColumnSQL generates an ALTER TABLE ADD COLUMN statement.
+// tableName should be pre-qualified (e.g., from QualifyTable).
+func (d *MySQLDialect) addColumnSQL(tableName string, column *types.Column) string {
 	return fmt.Sprintf("ALTER TABLE %s ADD COLUMN %s;",
-		d.QuoteIdentifier(tableName),
+		tableName,
 		d.ColumnDefinitionSQL(column))
 }
 
-// RenameColumnSQL generates an ALTER TABLE RENAME COLUMN statement.
+// renameColumnSQL generates an ALTER TABLE RENAME COLUMN statement.
 // Uses RENAME COLUMN syntax (MySQL 8.0+).
-func (d *MySQLDialect) RenameColumnSQL(tableName, oldName, newName string) string {
+// tableName should be pre-qualified (e.g., from QualifyTable).
+func (d *MySQLDialect) renameColumnSQL(tableName, oldName, newName string) string {
 	return fmt.Sprintf("ALTER TABLE %s RENAME COLUMN %s TO %s;",
-		d.QuoteIdentifier(tableName),
+		tableName,
 		d.QuoteIdentifier(oldName),
 		d.QuoteIdentifier(newName))
 }
 
-// ChangeColumnTypeSQL generates an ALTER TABLE MODIFY COLUMN statement to change column type.
+// changeColumnTypeSQL generates an ALTER TABLE MODIFY COLUMN statement to change column type.
 // Note: MySQL uses MODIFY COLUMN which requires the full column definition.
-func (d *MySQLDialect) ChangeColumnTypeSQL(tableName string, column *types.Column) string {
+// tableName should be pre-qualified (e.g., from QualifyTable).
+func (d *MySQLDialect) changeColumnTypeSQL(tableName string, column *types.Column) string {
 	return fmt.Sprintf("ALTER TABLE %s MODIFY COLUMN %s %s;",
-		d.QuoteIdentifier(tableName),
+		tableName,
 		d.QuoteIdentifier(column.Name),
 		d.mapDataType(column))
 }
 
-// SetColumnNotNullSQL generates an ALTER TABLE MODIFY COLUMN statement to set NOT NULL.
+// setColumnNotNullSQL generates an ALTER TABLE MODIFY COLUMN statement to set NOT NULL.
 // Note: MySQL requires knowing the column type to modify constraints.
-// This is a simplified version that may need the full column definition in practice.
-func (d *MySQLDialect) SetColumnNotNullSQL(tableName, columnName string) string {
+// tableName should be pre-qualified (e.g., from QualifyTable).
+func (d *MySQLDialect) setColumnNotNullSQL(tableName, columnName string) string {
 	// MySQL doesn't have a direct "SET NOT NULL" - you need to use MODIFY with the full definition.
 	// This is a workaround that works for simple cases.
 	return fmt.Sprintf("ALTER TABLE %s MODIFY COLUMN %s %s NOT NULL;",
-		d.QuoteIdentifier(tableName),
+		tableName,
 		d.QuoteIdentifier(columnName),
 		"VARCHAR(255)") // TODO: This needs the actual column type
 }
 
-// DropColumnNotNullSQL generates an ALTER TABLE MODIFY COLUMN statement to drop NOT NULL.
+// dropColumnNotNullSQL generates an ALTER TABLE MODIFY COLUMN statement to drop NOT NULL.
 // Note: MySQL requires knowing the column type to modify constraints.
-func (d *MySQLDialect) DropColumnNotNullSQL(tableName, columnName string) string {
+// tableName should be pre-qualified (e.g., from QualifyTable).
+func (d *MySQLDialect) dropColumnNotNullSQL(tableName, columnName string) string {
 	return fmt.Sprintf("ALTER TABLE %s MODIFY COLUMN %s %s NULL;",
-		d.QuoteIdentifier(tableName),
+		tableName,
 		d.QuoteIdentifier(columnName),
 		"VARCHAR(255)") // TODO: This needs the actual column type
 }
 
-// SetColumnDefaultSQL generates an ALTER TABLE ALTER COLUMN SET DEFAULT statement.
-func (d *MySQLDialect) SetColumnDefaultSQL(tableName, columnName string, defaultValue any) string {
+// setColumnDefaultSQL generates an ALTER TABLE ALTER COLUMN SET DEFAULT statement.
+// tableName should be pre-qualified (e.g., from QualifyTable).
+func (d *MySQLDialect) setColumnDefaultSQL(tableName, columnName string, defaultValue any) string {
 	return fmt.Sprintf("ALTER TABLE %s ALTER COLUMN %s SET DEFAULT %s;",
-		d.QuoteIdentifier(tableName),
+		tableName,
 		d.QuoteIdentifier(columnName),
 		d.formatDefault(defaultValue))
 }
 
-// DropColumnDefaultSQL generates an ALTER TABLE ALTER COLUMN DROP DEFAULT statement.
-func (d *MySQLDialect) DropColumnDefaultSQL(tableName, columnName string) string {
+// dropColumnDefaultSQL generates an ALTER TABLE ALTER COLUMN DROP DEFAULT statement.
+// tableName should be pre-qualified (e.g., from QualifyTable).
+func (d *MySQLDialect) dropColumnDefaultSQL(tableName, columnName string) string {
 	return fmt.Sprintf("ALTER TABLE %s ALTER COLUMN %s DROP DEFAULT;",
-		d.QuoteIdentifier(tableName),
+		tableName,
 		d.QuoteIdentifier(columnName))
 }
 
 // HasTableSQL returns SQL to check if a table exists in MySQL.
-func (d *MySQLDialect) HasTableSQL(tableName string) string {
+func (d *MySQLDialect) HasTableSQL(schema, tableName string) string {
+	if schema != "" {
+		return fmt.Sprintf(`SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = '%s' AND table_name = '%s'`, schema, tableName)
+	}
 	return fmt.Sprintf(`SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name = '%s'`, tableName)
 }
 
 // HasColumnSQL returns SQL to check if a column exists in MySQL.
-func (d *MySQLDialect) HasColumnSQL(tableName, columnName string) string {
+func (d *MySQLDialect) HasColumnSQL(schema, tableName, columnName string) string {
+	if schema != "" {
+		return fmt.Sprintf(`SELECT COUNT(*) FROM information_schema.columns WHERE table_schema = '%s' AND table_name = '%s' AND column_name = '%s'`, schema, tableName, columnName)
+	}
 	return fmt.Sprintf(`SELECT COUNT(*) FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = '%s' AND column_name = '%s'`, tableName, columnName)
 }
 
-// CommentColumnSQL returns SQL to add a comment to a column in MySQL.
+// commentColumnSQL returns SQL to add a comment to a column in MySQL.
 // Note: MySQL supports inline COMMENT in CREATE TABLE.
-func (d *MySQLDialect) CommentColumnSQL(tableName, columnName, comment string) string {
+func (d *MySQLDialect) commentColumnSQL(tableName, columnName, comment string) string {
 	return ""
 }
 
-// DropPrimarySQL returns SQL to drop the primary key constraint in MySQL.
+// dropPrimarySQL returns SQL to drop the primary key constraint in MySQL.
 // Note: MySQL doesn't use constraint names for primary keys.
-func (d *MySQLDialect) DropPrimarySQL(tableName, constraintName string) string {
-	return fmt.Sprintf("ALTER TABLE %s DROP PRIMARY KEY;", d.QuoteIdentifier(tableName))
+// tableName should be pre-qualified (e.g., from QualifyTable).
+func (d *MySQLDialect) dropPrimarySQL(tableName, constraintName string) string {
+	return fmt.Sprintf("ALTER TABLE %s DROP PRIMARY KEY;", tableName)
+}
+
+// QualifyTable returns a schema-qualified table name.
+// MySQL uses database.table syntax.
+func (d *MySQLDialect) QualifyTable(schema, tableName string) string {
+	if schema == "" {
+		return d.QuoteIdentifier(tableName)
+	}
+	return fmt.Sprintf("%s.%s", d.QuoteIdentifier(schema), d.QuoteIdentifier(tableName))
 }

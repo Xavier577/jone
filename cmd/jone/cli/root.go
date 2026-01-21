@@ -26,4 +26,5 @@ func init() {
 	rootCmd.AddCommand(migrateMakeCmd)
 	rootCmd.AddCommand(migrateLatestCmd)
 	rootCmd.AddCommand(migrateDownCmd)
+	rootCmd.AddCommand(migrateRollbackCmd)
 }

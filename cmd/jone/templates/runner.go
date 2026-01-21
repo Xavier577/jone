@@ -52,6 +52,11 @@ func main() {
 			fmt.Printf("Rollback failed: %v\n", err)
 			os.Exit(1)
 		}
+	case "migrate:rollback":
+		if err := jone.RunRollback(cfg, registry.Registrations, s); err != nil {
+			fmt.Printf("Rollback failed: %v\n", err)
+			os.Exit(1)
+		}
 	default:
 		fmt.Printf("Unknown command: %s\n", os.Args[1])
 		os.Exit(1)

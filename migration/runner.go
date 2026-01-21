@@ -34,3 +34,9 @@ func RunDown(cfg *config.Config, registrations []Registration, s *schema.Schema)
 	fmt.Println("All rollbacks completed successfully")
 	return nil
 }
+
+func RunRollback(cfg *config.Config, registrations []Registration, s *schema.Schema) error {
+	fmt.Println("Running rollback (migrate:rollback)...")
+
+	return nil
+}
