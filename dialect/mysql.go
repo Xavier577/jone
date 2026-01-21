@@ -199,7 +199,7 @@ func (d *MySQLDialect) AlterTableSQL(schema, tableName string, actions []*types.
 		case types.ActionDropForeignKey:
 			statements = append(statements, d.dropForeignKeySQL(qualifiedTable, action.ForeignKey.Name))
 		case types.ActionDropPrimary:
-			statements = append(statements, d.dropPrimarySQL(qualifiedTable, action.Name))
+			statements = append(statements, d.dropPrimarySQL(qualifiedTable))
 		}
 	}
 	return statements
@@ -353,16 +353,16 @@ func (d *MySQLDialect) HasColumnSQL(schema, tableName, columnName string) string
 	return fmt.Sprintf(`SELECT COUNT(*) FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = '%s' AND column_name = '%s'`, tableName, columnName)
 }
 
-// commentColumnSQL returns SQL to add a comment to a column in MySQL.
+// CommentColumnSQL returns SQL to add a comment to a column in MySQL.
 // Note: MySQL supports inline COMMENT in CREATE TABLE.
-func (d *MySQLDialect) commentColumnSQL(tableName, columnName, comment string) string {
+func (d *MySQLDialect) CommentColumnSQL(tableName, columnName, comment string) string {
 	return ""
 }
 
 // dropPrimarySQL returns SQL to drop the primary key constraint in MySQL.
 // Note: MySQL doesn't use constraint names for primary keys.
 // tableName should be pre-qualified (e.g., from QualifyTable).
-func (d *MySQLDialect) dropPrimarySQL(tableName, constraintName string) string {
+func (d *MySQLDialect) dropPrimarySQL(tableName string) string {
 	return fmt.Sprintf("ALTER TABLE %s DROP PRIMARY KEY;", tableName)
 }
 

@@ -191,7 +191,7 @@ func (d *PostgresDialect) AlterTableSQL(schema, tableName string, actions []*typ
 		case types.ActionCreateIndex:
 			statements = append(statements, d.createIndexSQL(qualifiedTable, action.Index))
 		case types.ActionDropIndex:
-			statements = append(statements, d.dropIndexSQL(qualifiedTable, action.Index.Name))
+			statements = append(statements, d.dropIndexSQL(schema, action.Index.Name))
 		case types.ActionAddForeignKey:
 			statements = append(statements, d.addForeignKeySQL(qualifiedTable, action.ForeignKey))
 		case types.ActionDropForeignKey:
@@ -234,9 +234,12 @@ func (d *PostgresDialect) createIndexSQL(tableName string, idx *types.Index) str
 }
 
 // dropIndexSQL generates a DROP INDEX statement.
-// PostgreSQL doesn't require tableName but accepts it for interface compatibility.
-func (d *PostgresDialect) dropIndexSQL(tableName, name string) string {
-	return fmt.Sprintf("DROP INDEX %s;", d.QuoteIdentifier(name))
+// In PostgreSQL, indexes are schema-scoped and need to be qualified.
+func (d *PostgresDialect) dropIndexSQL(schema, name string) string {
+	if schema == "" {
+		return fmt.Sprintf("DROP INDEX %s;", d.QuoteIdentifier(name))
+	}
+	return fmt.Sprintf("DROP INDEX %s.%s;", d.QuoteIdentifier(schema), d.QuoteIdentifier(name))
 }
 
 // addForeignKeySQL generates an ALTER TABLE ADD CONSTRAINT FOREIGN KEY statement.
