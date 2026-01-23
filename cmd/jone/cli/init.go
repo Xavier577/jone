@@ -4,9 +4,11 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 
 	"github.com/Grandbusta/jone/cmd/jone/templates"
+	"github.com/Grandbusta/jone/internal/term"
 	"github.com/spf13/cobra"
 )
 
@@ -17,6 +19,10 @@ var initCmd = &cobra.Command{
 	Run:   initJone,
 }
 
+func init() {
+	initCmd.Flags().StringP("db", "d", "postgres", "Database type (postgres, mysql, sqlite)")
+}
+
 func initJone(cmd *cobra.Command, args []string) {
 	cwd, err := os.Getwd()
 	if err != nil {
@@ -24,25 +30,77 @@ func initJone(cmd *cobra.Command, args []string) {
 		os.Exit(1)
 	}
 
+	dbFlag, _ := cmd.Flags().GetString("db")
+	// Normalize database name
+	var database string
+	switch dbFlag {
+	case "postgres", "postgresql", "pg":
+		database = "postgres"
+	case "mysql", "mariadb":
+		database = "mysql"
+	case "sqlite", "sqlite3":
+		database = "sqlite"
+	default:
+		fmt.Printf("Unsupported database: %s\n", dbFlag)
+		fmt.Println("Supported databases: postgres, mysql, sqlite")
+		os.Exit(1)
+	}
+
 	modFilePath := FindOrCreateGoMod(cwd)
 	if modFilePath == "" {
-		return
+		fmt.Println("Failed to find or create go.mod file.")
+		os.Exit(1)
 	}
 
 	if !JoneDependencyPresent(modFilePath) {
-		fmt.Println("jone is not installed in this project.")
-		fmt.Printf("To add it, run: go get %s\n", RuntimePackage)
+		fmt.Println("jone is not installed in this project. Installing...")
+		goGetCmd := exec.Command("go", "get", RuntimePackage)
+		goGetCmd.Dir = cwd
+		goGetCmd.Stdout = os.Stdout
+		goGetCmd.Stderr = os.Stderr
+		if err := goGetCmd.Run(); err != nil {
+			fmt.Printf("Failed to install jone: %v\n", err)
+			os.Exit(1)
+		}
+		fmt.Println(term.GreenText("jone installed successfully."))
 	}
 
-	if err := createJoneFolderAndFiles(cwd); err != nil {
+	if err := createJoneFolderAndFiles(cwd, database); err != nil {
 		fmt.Printf("Error creating jone files: %v\n", err)
-		return
+		os.Exit(1)
 	}
 
-	fmt.Println("jone init complete.")
+	// Install database driver
+	driverPackage := getDriverPackage(database)
+	if driverPackage != "" {
+		fmt.Printf("%s\n", term.YellowText(fmt.Sprintf("Installing database driver (%s)...", driverPackage)))
+		goGetCmd := exec.Command("go", "get", driverPackage)
+		goGetCmd.Dir = cwd
+		goGetCmd.Stdout = os.Stdout
+		goGetCmd.Stderr = os.Stderr
+		if err := goGetCmd.Run(); err != nil {
+			fmt.Printf("Warning: Failed to install driver: %v\n", err)
+			fmt.Printf("You may need to run: go get %s\n", driverPackage)
+		}
+	}
+
+	fmt.Println(term.GreenText(fmt.Sprintf("jone init complete (database: %s).", database)))
 }
 
-func createJoneFolderAndFiles(cwd string) error {
+func getDriverPackage(database string) string {
+	switch database {
+	case "postgres":
+		return "github.com/jackc/pgx/v5/stdlib"
+	case "mysql":
+		return "github.com/go-sql-driver/mysql"
+	case "sqlite":
+		return "github.com/mattn/go-sqlite3"
+	default:
+		return ""
+	}
+}
+
+func createJoneFolderAndFiles(cwd string, database string) error {
 	joneFolderPath := filepath.Join(cwd, JoneFolderPath)
 
 	// Create jone folder
@@ -60,7 +118,7 @@ func createJoneFolderAndFiles(cwd string) error {
 	joneFilePath := filepath.Join(cwd, JoneFilePath)
 	if _, err := os.Stat(joneFilePath); err != nil {
 		if errors.Is(err, os.ErrNotExist) {
-			if err := writeJoneFile(joneFilePath); err != nil {
+			if err := writeJoneFile(joneFilePath, database); err != nil {
 				return err
 			}
 		} else {
@@ -96,9 +154,10 @@ func createJoneFolderAndFiles(cwd string) error {
 	return nil
 }
 
-func writeJoneFile(path string) error {
+func writeJoneFile(path string, database string) error {
 	content, err := templates.RenderJoneFile(templates.JoneFileData{
 		RuntimePackage: RuntimePackage,
+		Database:       database,
 	})
 	if err != nil {
 		return fmt.Errorf("rendering jonefile template: %w", err)

@@ -9,9 +9,6 @@ import (
 var rootCmd = &cobra.Command{
 	Use:   "jone",
 	Short: "A tool to handle migrations in Golang",
-	// Run: func(cmd *cobra.Command, args []string) {
-
-	// },
 }
 
 func Execute() {
