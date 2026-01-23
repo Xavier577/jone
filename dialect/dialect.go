@@ -41,6 +41,29 @@ type Dialect interface {
 	// QualifyTable returns a schema-qualified table name.
 	// If schema is empty, returns just the quoted table name.
 	QualifyTable(schema, tableName string) string
+
+	// --- Migration Tracking Methods ---
+
+	// CreateMigrationsTableSQL returns SQL to create the migrations tracking table.
+	CreateMigrationsTableSQL(tableName string) string
+
+	// InsertMigrationSQL returns parameterized SQL to record a migration.
+	// Parameters: $1=name, $2=batch
+	InsertMigrationSQL(tableName string) string
+
+	// DeleteMigrationSQL returns parameterized SQL to remove a migration record.
+	// Parameters: $1=name
+	DeleteMigrationSQL(tableName string) string
+
+	// GetAppliedMigrationsSQL returns SQL to get all applied migration names.
+	GetAppliedMigrationsSQL(tableName string) string
+
+	// GetLastBatchSQL returns SQL to get the highest batch number.
+	GetLastBatchSQL(tableName string) string
+
+	// GetMigrationsByBatchSQL returns parameterized SQL to get migrations for a batch.
+	// Parameters: $1=batch
+	GetMigrationsByBatchSQL(tableName string) string
 }
 
 // GetDialect returns a dialect implementation by name.

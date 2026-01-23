@@ -15,7 +15,10 @@ var migrateLatestCmd = &cobra.Command{
 }
 
 func migrateLatestJone(cmd *cobra.Command, args []string) {
-	if err := runMigrations("migrate:latest"); err != nil {
+	execParams := RunExecParams{
+		Command: "migrate:latest",
+	}
+	if err := runMigrations(execParams); err != nil {
 		fmt.Printf("Error running migrations: %v\n", err)
 		os.Exit(1)
 	}

@@ -74,3 +74,17 @@ func (c *Column) Comment(comment string) *Column {
 	c.Column.Comment = comment
 	return c
 }
+
+// OnDelete sets the ON DELETE action for the foreign key reference.
+// Valid values: CASCADE, SET NULL, RESTRICT, NO ACTION
+func (c *Column) OnDelete(action string) *Column {
+	c.Column.RefOnDelete = action
+	return c
+}
+
+// OnUpdate sets the ON UPDATE action for the foreign key reference.
+// Valid values: CASCADE, SET NULL, RESTRICT, NO ACTION
+func (c *Column) OnUpdate(action string) *Column {
+	c.Column.RefOnUpdate = action
+	return c
+}

@@ -71,7 +71,8 @@ func migrateMakeJone(cmd *cobra.Command, args []string) {
 		}
 	}
 
-	if err := createMigration(cwd, args[0]); err != nil {
+	migrationPath, err := createMigration(cwd, args[0])
+	if err != nil {
 		fmt.Printf("Error creating migration: %v\n", err)
 		return
 	}
@@ -81,29 +82,31 @@ func migrateMakeJone(cmd *cobra.Command, args []string) {
 		return
 	}
 
-	fmt.Printf("Migration %s created successfully\n", args[0])
+	fmt.Printf("Migration %s created successfully: %s\n", args[0], migrationPath)
 }
 
-func createMigration(cwd string, name string) error {
+func createMigration(cwd string, name string) (migrationPath string, err error) {
 	ts := time.Now().UTC().Format("20060102150405")
 	folderName := fmt.Sprintf("%s_%s", ts, name)
 	folderPath := filepath.Join(cwd, MigrationsPath, folderName)
 
 	if err := os.Mkdir(folderPath, 0755); err != nil {
-		return fmt.Errorf("creating migration folder: %w", err)
+		return "", fmt.Errorf("creating migration folder: %w", err)
 	}
 
 	stub, err := templates.RenderMigration(templates.MigrationStubData{
 		RuntimePackage: RuntimePackage,
 	})
 	if err != nil {
-		return fmt.Errorf("rendering migration stub: %w", err)
+		return "", fmt.Errorf("rendering migration stub: %w", err)
 	}
 
-	migrationFile := filepath.Join(folderPath, "migration.go")
-	if err := os.WriteFile(migrationFile, stub, 0o644); err != nil {
-		return fmt.Errorf("writing migration file: %w", err)
+	migrationFilePath := filepath.Join(folderPath, "migration.go")
+	if err := os.WriteFile(migrationFilePath, stub, 0o644); err != nil {
+		return "", fmt.Errorf("writing migration file: %w", err)
 	}
 
-	return nil
+	// Return relative path from jone folder
+	relativePath := filepath.Join(MigrationsPath, folderName, "migration.go")
+	return relativePath, nil
 }

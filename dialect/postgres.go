@@ -78,11 +78,18 @@ func (d *PostgresDialect) ColumnDefinitionSQL(col *types.Column) string {
 		parts = append(parts, fmt.Sprintf("DEFAULT %v", d.formatDefault(col.DefaultValue)))
 	}
 	if col.RefTable != "" && col.RefColumn != "" {
-		parts = append(parts, fmt.Sprintf(
+		refPart := fmt.Sprintf(
 			"REFERENCES %s(%s)",
 			d.QuoteIdentifier(col.RefTable),
 			d.QuoteIdentifier(col.RefColumn),
-		))
+		)
+		if col.RefOnDelete != "" {
+			refPart += " ON DELETE " + col.RefOnDelete
+		}
+		if col.RefOnUpdate != "" {
+			refPart += " ON UPDATE " + col.RefOnUpdate
+		}
+		parts = append(parts, refPart)
 	}
 
 	return strings.Join(parts, " ")
@@ -377,4 +384,46 @@ func (d *PostgresDialect) QualifyTable(schema, tableName string) string {
 		return d.QuoteIdentifier(tableName)
 	}
 	return fmt.Sprintf("%s.%s", d.QuoteIdentifier(schema), d.QuoteIdentifier(tableName))
+}
+
+// --- Migration Tracking Methods ---
+
+// CreateMigrationsTableSQL returns SQL to create the migrations tracking table in public schema.
+func (d *PostgresDialect) CreateMigrationsTableSQL(tableName string) string {
+	return fmt.Sprintf(`CREATE TABLE IF NOT EXISTS "public".%s (
+	id SERIAL PRIMARY KEY,
+	name VARCHAR(255) NOT NULL UNIQUE,
+	batch INTEGER NOT NULL,
+	applied_at TIMESTAMP DEFAULT NOW()
+);`, d.QuoteIdentifier(tableName))
+}
+
+// InsertMigrationSQL returns parameterized SQL to record a migration.
+func (d *PostgresDialect) InsertMigrationSQL(tableName string) string {
+	return fmt.Sprintf(`INSERT INTO "public".%s (name, batch) VALUES ($1, $2);`,
+		d.QuoteIdentifier(tableName))
+}
+
+// DeleteMigrationSQL returns parameterized SQL to remove a migration record.
+func (d *PostgresDialect) DeleteMigrationSQL(tableName string) string {
+	return fmt.Sprintf(`DELETE FROM "public".%s WHERE name = $1;`,
+		d.QuoteIdentifier(tableName))
+}
+
+// GetAppliedMigrationsSQL returns SQL to get all applied migration names ordered by id.
+func (d *PostgresDialect) GetAppliedMigrationsSQL(tableName string) string {
+	return fmt.Sprintf(`SELECT name FROM "public".%s ORDER BY id;`,
+		d.QuoteIdentifier(tableName))
+}
+
+// GetLastBatchSQL returns SQL to get the highest batch number.
+func (d *PostgresDialect) GetLastBatchSQL(tableName string) string {
+	return fmt.Sprintf(`SELECT COALESCE(MAX(batch), 0) FROM "public".%s;`,
+		d.QuoteIdentifier(tableName))
+}
+
+// GetMigrationsByBatchSQL returns parameterized SQL to get migrations for a batch.
+func (d *PostgresDialect) GetMigrationsByBatchSQL(tableName string) string {
+	return fmt.Sprintf(`SELECT name FROM "public".%s WHERE batch = $1 ORDER BY id DESC;`,
+		d.QuoteIdentifier(tableName))
 }

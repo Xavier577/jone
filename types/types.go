@@ -67,6 +67,8 @@ type Column struct {
 	HasDefault   bool
 	RefTable     string
 	RefColumn    string
+	RefOnDelete  string // CASCADE, SET NULL, RESTRICT, NO ACTION
+	RefOnUpdate  string // CASCADE, SET NULL, RESTRICT, NO ACTION
 	Comment      string // Column comment/description
 }
 

@@ -15,7 +15,11 @@ var migrateDownCmd = &cobra.Command{
 }
 
 func migrateDownJone(cmd *cobra.Command, args []string) {
-	if err := runMigrations("migrate:down"); err != nil {
+	execParams := RunExecParams{
+		Command: "migrate:down",
+		Args:    args,
+	}
+	if err := runMigrations(execParams); err != nil {
 		fmt.Printf("Error rolling back migrations: %v\n", err)
 		os.Exit(1)
 	}

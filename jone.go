@@ -37,12 +37,17 @@ var NewSchema = schema.New
 
 // Migration types (re-exported from migration package)
 type Registration = migration.Registration
+type RunParams = migration.RunParams
+type RunOptions = migration.RunOptions
 
-// RunUp executes all Up migrations in order.
+// RunLatest executes pending Up migrations in order.
 var RunLatest = migration.RunLatest
 
 // RunDown executes all Down migrations in reverse order.
 var RunDown = migration.RunDown
+
+// RunRollback rolls back the last batch of migrations.
+var RunRollback = migration.RunRollback
 
 // Dialect types and functions (re-exported from dialect package)
 type Dialect = dialect.Dialect

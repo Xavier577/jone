@@ -9,8 +9,14 @@ import (
 	"github.com/Grandbusta/jone/cmd/jone/templates"
 )
 
+type RunExecParams struct {
+	Command string
+	Flags   map[string]any
+	Args    []string
+}
+
 // runMigrations generates a runner, builds it, and executes it with the given command.
-func runMigrations(command string) error {
+func runMigrations(params RunExecParams) error {
 	cwd, err := os.Getwd()
 	if err != nil {
 		return fmt.Errorf("failed to get working directory: %w", err)
@@ -45,7 +51,7 @@ func runMigrations(command string) error {
 	}
 
 	// Execute runner
-	if err := executeRunner(binaryPath, command); err != nil {
+	if err := executeRunner(binaryPath, params); err != nil {
 		return fmt.Errorf("executing runner: %w", err)
 	}
 
@@ -85,10 +91,34 @@ func buildRunner(cwd, runnerPath, binaryPath string) error {
 	return nil
 }
 
-func executeRunner(binaryPath, command string) error {
-	fmt.Printf("Running migrations (%s)...\n", command)
+func executeRunner(binaryPath string, params RunExecParams) error {
+	fmt.Printf("Running migrations (%s)...\n", params.Command)
 
-	runCmd := exec.Command(binaryPath, command)
+	// Build command arguments: command + flags + args
+	cmdArgs := []string{params.Command}
+
+	// Add flags
+	for key, value := range params.Flags {
+		switch v := value.(type) {
+		case bool:
+			if v {
+				cmdArgs = append(cmdArgs, fmt.Sprintf("--%s", key))
+			}
+		case string:
+			if v != "" {
+				cmdArgs = append(cmdArgs, fmt.Sprintf("--%s=%s", key, v))
+			}
+		case int:
+			cmdArgs = append(cmdArgs, fmt.Sprintf("--%s=%d", key, v))
+		default:
+			cmdArgs = append(cmdArgs, fmt.Sprintf("--%s=%v", key, v))
+		}
+	}
+
+	// Add positional args
+	cmdArgs = append(cmdArgs, params.Args...)
+
+	runCmd := exec.Command(binaryPath, cmdArgs...)
 	runCmd.Stdout = os.Stdout
 	runCmd.Stderr = os.Stderr
 

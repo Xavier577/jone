@@ -15,6 +15,7 @@ const runnerTemplateContent = `
 package main
 
 import (
+	"flag"
 	"fmt"
 	"os"
 
@@ -27,9 +28,17 @@ import (
 
 func main() {
 	if len(os.Args) < 2 {
-		fmt.Println("Usage: _runner <migrate:latest|migrate:down>")
+		fmt.Println("Usage: runner <migrate:latest|migrate:down|migrate:rollback> [flags]")
 		os.Exit(1)
 	}
+
+	command := os.Args[1]
+
+	// Define flags
+	allFlag := flag.Bool("all", false, "Rollback all migrations")
+
+	// Parse flags (skip command name)
+	flag.CommandLine.Parse(os.Args[2:])
 
 	cfg := &joneconfig.Config
 
@@ -41,24 +50,34 @@ func main() {
 	}
 	defer s.Close()
 
-	switch os.Args[1] {
+	params := jone.RunParams{
+		Config:        cfg,
+		Registrations: registry.Registrations,
+		Schema:        s,
+		Options: jone.RunOptions{
+			All:  *allFlag,
+			Args: flag.Args(),
+		},
+	}
+
+	switch command {
 	case "migrate:latest":
-		if err := jone.RunLatest(cfg, registry.Registrations, s); err != nil {
+		if err := jone.RunLatest(params); err != nil {
 			fmt.Printf("Migration failed: %v\n", err)
 			os.Exit(1)
 		}
 	case "migrate:down":
-		if err := jone.RunDown(cfg, registry.Registrations, s); err != nil {
+		if err := jone.RunDown(params); err != nil {
 			fmt.Printf("Rollback failed: %v\n", err)
 			os.Exit(1)
 		}
 	case "migrate:rollback":
-		if err := jone.RunRollback(cfg, registry.Registrations, s); err != nil {
+		if err := jone.RunRollback(params); err != nil {
 			fmt.Printf("Rollback failed: %v\n", err)
 			os.Exit(1)
 		}
 	default:
-		fmt.Printf("Unknown command: %s\n", os.Args[1])
+		fmt.Printf("Unknown command: %s\n", command)
 		os.Exit(1)
 	}
 }

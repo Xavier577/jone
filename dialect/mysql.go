@@ -83,6 +83,20 @@ func (d *MySQLDialect) ColumnDefinitionSQL(col *types.Column) string {
 	if col.Comment != "" {
 		parts = append(parts, fmt.Sprintf("COMMENT '%s'", col.Comment))
 	}
+	if col.RefTable != "" && col.RefColumn != "" {
+		refPart := fmt.Sprintf(
+			"REFERENCES %s(%s)",
+			d.QuoteIdentifier(col.RefTable),
+			d.QuoteIdentifier(col.RefColumn),
+		)
+		if col.RefOnDelete != "" {
+			refPart += " ON DELETE " + col.RefOnDelete
+		}
+		if col.RefOnUpdate != "" {
+			refPart += " ON UPDATE " + col.RefOnUpdate
+		}
+		parts = append(parts, refPart)
+	}
 
 	return strings.Join(parts, " ")
 }
@@ -373,4 +387,46 @@ func (d *MySQLDialect) QualifyTable(schema, tableName string) string {
 		return d.QuoteIdentifier(tableName)
 	}
 	return fmt.Sprintf("%s.%s", d.QuoteIdentifier(schema), d.QuoteIdentifier(tableName))
+}
+
+// --- Migration Tracking Methods ---
+
+// CreateMigrationsTableSQL returns SQL to create the migrations tracking table.
+func (d *MySQLDialect) CreateMigrationsTableSQL(tableName string) string {
+	return fmt.Sprintf(`CREATE TABLE IF NOT EXISTS %s (
+	id INT AUTO_INCREMENT PRIMARY KEY,
+	name VARCHAR(255) NOT NULL UNIQUE,
+	batch INT NOT NULL,
+	applied_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);`, d.QuoteIdentifier(tableName))
+}
+
+// InsertMigrationSQL returns parameterized SQL to record a migration.
+func (d *MySQLDialect) InsertMigrationSQL(tableName string) string {
+	return fmt.Sprintf("INSERT INTO %s (name, batch) VALUES (?, ?);",
+		d.QuoteIdentifier(tableName))
+}
+
+// DeleteMigrationSQL returns parameterized SQL to remove a migration record.
+func (d *MySQLDialect) DeleteMigrationSQL(tableName string) string {
+	return fmt.Sprintf("DELETE FROM %s WHERE name = ?;",
+		d.QuoteIdentifier(tableName))
+}
+
+// GetAppliedMigrationsSQL returns SQL to get all applied migration names ordered by id.
+func (d *MySQLDialect) GetAppliedMigrationsSQL(tableName string) string {
+	return fmt.Sprintf("SELECT name FROM %s ORDER BY id;",
+		d.QuoteIdentifier(tableName))
+}
+
+// GetLastBatchSQL returns SQL to get the highest batch number.
+func (d *MySQLDialect) GetLastBatchSQL(tableName string) string {
+	return fmt.Sprintf("SELECT COALESCE(MAX(batch), 0) FROM %s;",
+		d.QuoteIdentifier(tableName))
+}
+
+// GetMigrationsByBatchSQL returns parameterized SQL to get migrations for a batch.
+func (d *MySQLDialect) GetMigrationsByBatchSQL(tableName string) string {
+	return fmt.Sprintf("SELECT name FROM %s WHERE batch = ? ORDER BY id DESC;",
+		d.QuoteIdentifier(tableName))
 }
