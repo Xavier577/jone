@@ -35,11 +35,15 @@ jone migrate:list
 | `jone migrate:down [name]` | Rollback last migration (or specific one). |
 | `jone migrate:rollback` | Rollback last batch of migrations. |
 | `jone migrate:list` | List all migrations with status. |
+| `jone migrate:status` | Alias for `migrate:list`. |
 
 ### Flags
 
 **`jone init`**
 - `--db`, `-d` — Database type: `postgres`, `mysql`, `sqlite` (default: `postgres`)
+
+**`jone migrate:latest`**, **`migrate:up`**, **`migrate:down`**, **`migrate:rollback`**
+- `--dry-run` — Show SQL that would be executed without running it
 
 **`jone migrate:rollback`**
 - `--all`, `-a` — Rollback all migrations (not just last batch)

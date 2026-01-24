@@ -14,9 +14,17 @@ var migrateLatestCmd = &cobra.Command{
 	Run:   migrateLatestJone,
 }
 
+func init() {
+	migrateLatestCmd.Flags().Bool("dry-run", false, "Show SQL without executing")
+}
+
 func migrateLatestJone(cmd *cobra.Command, args []string) {
+	dryRun, _ := cmd.Flags().GetBool("dry-run")
 	execParams := RunExecParams{
 		Command: "migrate:latest",
+		Flags: map[string]any{
+			"dry-run": dryRun,
+		},
 	}
 	if err := runMigrations(execParams); err != nil {
 		fmt.Printf("Error running migrations: %v\n", err)

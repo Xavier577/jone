@@ -11,8 +11,9 @@ import (
 
 // RunOptions holds optional flags for migration commands.
 type RunOptions struct {
-	All  bool     // For rollback --all (rollback all batches)
-	Args []string // Positional arguments
+	All    bool     // For rollback --all (rollback all batches)
+	DryRun bool     // Show SQL without executing
+	Args   []string // Positional arguments
 }
 
 // RunParams holds all parameters needed to run migrations.
@@ -26,6 +27,11 @@ type RunParams struct {
 // RunLatest executes pending Up migrations in order using the provided schema.
 // Each migration is wrapped in a transaction.
 func RunLatest(p RunParams) error {
+	// Dry-run mode: just show what would be executed
+	if p.Options.DryRun {
+		return runLatestDryRun(p)
+	}
+
 	// Create tracker
 	d := p.Schema.Dialect()
 	tracker := NewTracker(p.Schema.DB(), d, p.Config.Migrations.TableName)
@@ -78,6 +84,22 @@ func RunLatest(p RunParams) error {
 	return nil
 }
 
+// runLatestDryRun shows what migrations would be run without executing.
+func runLatestDryRun(p RunParams) error {
+	fmt.Println(term.YellowText("[DRY RUN]") + " Would run the following migrations:")
+	fmt.Println()
+
+	for _, reg := range p.Registrations {
+		fmt.Printf("Migration: %s\n", term.GreenText(reg.Name))
+		fmt.Println("SQL:")
+		reg.Up(p.Schema) // Schema has no execer, so it prints SQL
+		fmt.Println()
+	}
+
+	fmt.Printf("Total: %d migration(s) would be applied\n", len(p.Registrations))
+	return nil
+}
+
 // RunList displays all migrations with their status (applied/pending).
 func RunList(p RunParams) error {
 	d := p.Schema.Dialect()
@@ -124,6 +146,11 @@ func RunList(p RunParams) error {
 // RunUp runs the next pending migration or a specific one if Args[0] provided.
 // Each migration is wrapped in a transaction.
 func RunUp(p RunParams) error {
+	// Dry-run mode
+	if p.Options.DryRun {
+		return runUpDryRun(p)
+	}
+
 	d := p.Schema.Dialect()
 	tracker := NewTracker(p.Schema.DB(), d, p.Config.Migrations.TableName)
 
@@ -219,6 +246,11 @@ func runMigration(p RunParams, tracker *Tracker, reg Registration, batch int) er
 // RunDown rolls back the last single migration that was applied.
 // Each migration is wrapped in a transaction.
 func RunDown(p RunParams) error {
+	// Dry-run mode
+	if p.Options.DryRun {
+		return runDownDryRun(p)
+	}
+
 	d := p.Schema.Dialect()
 	tracker := NewTracker(p.Schema.DB(), d, p.Config.Migrations.TableName)
 
@@ -264,6 +296,11 @@ func RunDown(p RunParams) error {
 // RunRollback rolls back the last batch of migrations (or all if Options.All is true).
 // Each migration is wrapped in a transaction.
 func RunRollback(p RunParams) error {
+	// Dry-run mode
+	if p.Options.DryRun {
+		return runRollbackDryRun(p)
+	}
+
 	d := p.Schema.Dialect()
 	tracker := NewTracker(p.Schema.DB(), d, p.Config.Migrations.TableName)
 
@@ -363,5 +400,111 @@ func rollbackMigration(p RunParams, tracker *Tracker, regMap map[string]Registra
 	}
 
 	fmt.Printf("Rolled back: %s\n", name)
+	return nil
+}
+
+// runUpDryRun shows what migration would be run without executing.
+func runUpDryRun(p RunParams) error {
+	// Build map of registrations
+	regMap := make(map[string]Registration)
+	for _, reg := range p.Registrations {
+		regMap[reg.Name] = reg
+	}
+
+	var targetReg Registration
+	if len(p.Options.Args) > 0 {
+		// Specific migration
+		targetName := p.Options.Args[0]
+		reg, ok := regMap[targetName]
+		if !ok {
+			return fmt.Errorf("migration %s not found in registry", targetName)
+		}
+		targetReg = reg
+	} else {
+		// First pending (just use first registered for dry-run)
+		if len(p.Registrations) == 0 {
+			fmt.Println("No migrations registered")
+			return nil
+		}
+		targetReg = p.Registrations[0]
+	}
+
+	fmt.Println(term.YellowText("[DRY RUN]") + " Would run migration:")
+	fmt.Println()
+	fmt.Printf("Migration: %s\n", term.GreenText(targetReg.Name))
+	fmt.Println("SQL:")
+	targetReg.Up(p.Schema)
+	fmt.Println()
+	return nil
+}
+
+// runDownDryRun shows what migration would be rolled back without executing.
+func runDownDryRun(p RunParams) error {
+	// Build map of registrations
+	regMap := make(map[string]Registration)
+	for _, reg := range p.Registrations {
+		regMap[reg.Name] = reg
+	}
+
+	var targetName string
+	if len(p.Options.Args) > 0 {
+		targetName = p.Options.Args[0]
+	} else if len(p.Registrations) > 0 {
+		// In dry-run we can't check DB, so use last registered
+		targetName = p.Registrations[len(p.Registrations)-1].Name
+	} else {
+		fmt.Println("No migrations registered")
+		return nil
+	}
+
+	reg, ok := regMap[targetName]
+	if !ok {
+		return fmt.Errorf("migration %s not found in registry", targetName)
+	}
+
+	fmt.Println(term.YellowText("[DRY RUN]") + " Would rollback migration:")
+	fmt.Println()
+	fmt.Printf("Migration: %s\n", term.GreenText(reg.Name))
+	fmt.Println("SQL:")
+	reg.Down(p.Schema)
+	fmt.Println()
+	return nil
+}
+
+// runRollbackDryRun shows what migrations would be rolled back without executing.
+func runRollbackDryRun(p RunParams) error {
+	// Build map of registrations
+	regMap := make(map[string]Registration)
+	for _, reg := range p.Registrations {
+		regMap[reg.Name] = reg
+	}
+
+	if len(p.Registrations) == 0 {
+		fmt.Println("No migrations registered")
+		return nil
+	}
+
+	fmt.Println(term.YellowText("[DRY RUN]") + " Would rollback migrations:")
+	fmt.Println()
+
+	if p.Options.All {
+		// All migrations in reverse order
+		for i := len(p.Registrations) - 1; i >= 0; i-- {
+			reg := p.Registrations[i]
+			fmt.Printf("Migration: %s\n", term.GreenText(reg.Name))
+			fmt.Println("SQL:")
+			reg.Down(p.Schema)
+			fmt.Println()
+		}
+		fmt.Printf("Total: %d migration(s) would be rolled back\n", len(p.Registrations))
+	} else {
+		// Just the last one
+		reg := p.Registrations[len(p.Registrations)-1]
+		fmt.Printf("Migration: %s\n", term.GreenText(reg.Name))
+		fmt.Println("SQL:")
+		reg.Down(p.Schema)
+		fmt.Println()
+	}
+
 	return nil
 }

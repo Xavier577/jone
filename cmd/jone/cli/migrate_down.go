@@ -14,10 +14,18 @@ var migrateDownCmd = &cobra.Command{
 	Run:   migrateDownJone,
 }
 
+func init() {
+	migrateDownCmd.Flags().Bool("dry-run", false, "Show SQL without executing")
+}
+
 func migrateDownJone(cmd *cobra.Command, args []string) {
+	dryRun, _ := cmd.Flags().GetBool("dry-run")
 	execParams := RunExecParams{
 		Command: "migrate:down",
 		Args:    args,
+		Flags: map[string]any{
+			"dry-run": dryRun,
+		},
 	}
 	if err := runMigrations(execParams); err != nil {
 		fmt.Printf("Error rolling back migrations: %v\n", err)

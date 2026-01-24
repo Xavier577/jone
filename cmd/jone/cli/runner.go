@@ -38,6 +38,13 @@ func runMigrations(params RunExecParams) error {
 		return fmt.Errorf("creating .runner directory: %w", err)
 	}
 
+	// Cleanup .runner directory after execution
+	defer func() {
+		if err := os.RemoveAll(runnerDir); err != nil {
+			fmt.Printf("Warning: failed to cleanup .runner directory: %v\n", err)
+		}
+	}()
+
 	runnerPath := filepath.Join(runnerDir, "main.go")
 	binaryPath := filepath.Join(runnerDir, "runner")
 

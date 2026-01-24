@@ -14,10 +14,18 @@ var migrateUpCmd = &cobra.Command{
 	Run:   migrateUpJone,
 }
 
+func init() {
+	migrateUpCmd.Flags().Bool("dry-run", false, "Show SQL without executing")
+}
+
 func migrateUpJone(cmd *cobra.Command, args []string) {
+	dryRun, _ := cmd.Flags().GetBool("dry-run")
 	execParams := RunExecParams{
 		Command: "migrate:up",
 		Args:    args,
+		Flags: map[string]any{
+			"dry-run": dryRun,
+		},
 	}
 	if err := runMigrations(execParams); err != nil {
 		fmt.Printf("Error running migration: %v\n", err)

@@ -123,7 +123,7 @@ func (s *Schema) Table(name string, builder func(t *Table)) error {
 				return fmt.Errorf("executing ALTER TABLE: %w", err)
 			}
 		} else {
-			fmt.Printf("[DRY RUN] Would execute: %s\n", sql)
+			fmt.Println(sql)
 		}
 	}
 
@@ -155,6 +155,8 @@ func (s *Schema) CreateTable(name string, builder func(t *Table)) error {
 				}
 			}
 		}
+	} else {
+		fmt.Println(sql)
 	}
 	return nil
 }
@@ -172,7 +174,7 @@ func (s *Schema) CreateTableIfNotExists(name string, builder func(t *Table)) err
 			return fmt.Errorf("executing CREATE TABLE IF NOT EXISTS: %w", err)
 		}
 	} else {
-		fmt.Printf("[DRY RUN] Would create table if not exists: %s with %d columns\n", name, len(t.Columns))
+		fmt.Println(sql)
 	}
 
 	return nil
@@ -188,7 +190,7 @@ func (s *Schema) DropTable(name string) error {
 			return fmt.Errorf("executing DROP TABLE: %w", err)
 		}
 	} else {
-		fmt.Printf("[DRY RUN] Would drop table: %s\n", name)
+		fmt.Println(sql)
 	}
 
 	return nil
@@ -204,7 +206,7 @@ func (s *Schema) DropTableIfExists(name string) error {
 			return fmt.Errorf("executing DROP TABLE IF EXISTS: %w", err)
 		}
 	} else {
-		fmt.Printf("[DRY RUN] Would drop table if exists: %s\n", name)
+		fmt.Println(sql)
 	}
 
 	return nil
@@ -222,7 +224,7 @@ func (s *Schema) RenameTable(oldName, newName string) error {
 			return fmt.Errorf("executing RENAME TABLE: %w", err)
 		}
 	} else {
-		fmt.Printf("[DRY RUN] Would rename table: %s -> %s\n", oldName, newName)
+		fmt.Println(sql)
 	}
 
 	return nil

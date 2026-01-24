@@ -36,6 +36,7 @@ func main() {
 
 	// Define flags
 	allFlag := flag.Bool("all", false, "Rollback all migrations")
+	dryRunFlag := flag.Bool("dry-run", false, "Show SQL without executing")
 
 	// Parse flags (skip command name)
 	flag.CommandLine.Parse(os.Args[2:])
@@ -44,19 +45,22 @@ func main() {
 
 	// Create schema and open database connection
 	s := jone.NewSchema(cfg)
-	if err := s.Open(); err != nil {
-		fmt.Printf("Failed to connect to database: %v\n", err)
-		os.Exit(1)
+	if !*dryRunFlag {
+		if err := s.Open(); err != nil {
+			fmt.Printf("Failed to connect to database: %v\n", err)
+			os.Exit(1)
+		}
+		defer s.Close()
 	}
-	defer s.Close()
 
 	params := jone.RunParams{
 		Config:        cfg,
 		Registrations: registry.Registrations,
 		Schema:        s,
 		Options: jone.RunOptions{
-			All:  *allFlag,
-			Args: flag.Args(),
+			All:    *allFlag,
+			DryRun: *dryRunFlag,
+			Args:   flag.Args(),
 		},
 	}
 

@@ -8,10 +8,11 @@ import (
 )
 
 var migrateListCmd = &cobra.Command{
-	Use:   "migrate:list",
-	Short: "Lists all migrations with their status",
-	Long:  `Lists all registered migrations showing which are applied and which are pending.`,
-	Run:   migrateListJone,
+	Use:     "migrate:list",
+	Aliases: []string{"migrate:status"},
+	Short:   "Lists all migrations with their status (alias: migrate:status)",
+	Long:    `Lists all registered migrations showing which are applied and which are pending.`,
+	Run:     migrateListJone,
 }
 
 func migrateListJone(cmd *cobra.Command, args []string) {
