@@ -193,6 +193,20 @@ s.HasTable("users")           // Check if table exists
 s.HasColumn("users", "email") // Check if column exists
 ```
 
+### Raw SQL
+
+For custom statements the schema builder doesn't support:
+
+```go
+// DDL statements
+s.Raw("CREATE EXTENSION IF NOT EXISTS \"uuid-ossp\"")
+s.Raw("CREATE INDEX CONCURRENTLY idx_users_email ON users(email)")
+
+// Data migrations with parameters
+s.Raw("INSERT INTO settings (key, value) VALUES ($1, $2)", "version", "1.0")
+s.Raw("UPDATE users SET status = $1 WHERE created_at < $2", "legacy", "2020-01-01")
+```
+
 ## Migration Example
 
 ```go

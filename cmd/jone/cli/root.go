@@ -7,8 +7,9 @@ import (
 )
 
 var rootCmd = &cobra.Command{
-	Use:   "jone",
-	Short: "A tool to handle migrations in Golang",
+	Use:     "jone",
+	Short:   "A tool to handle migrations in Golang",
+	Version: Version,
 }
 
 func Execute() {
@@ -26,4 +27,5 @@ func init() {
 	rootCmd.AddCommand(migrateDownCmd)
 	rootCmd.AddCommand(migrateRollbackCmd)
 	rootCmd.AddCommand(migrateListCmd)
+	rootCmd.AddCommand(versionCmd)
 }

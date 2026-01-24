@@ -108,6 +108,20 @@ func (s *Schema) Close() error {
 	return nil
 }
 
+// Raw executes a raw SQL statement with optional parameters.
+// Use this for custom DDL, data migrations, or database-specific features.
+func (s *Schema) Raw(sql string, args ...any) error {
+	if s.execer != nil {
+		_, err := s.execer.Exec(sql, args...)
+		if err != nil {
+			return fmt.Errorf("executing raw SQL: %w", err)
+		}
+	} else {
+		fmt.Println(sql)
+	}
+	return nil
+}
+
 func (s *Schema) Table(name string, builder func(t *Table)) error {
 	t := NewTable(name)
 	t.Schema = s.schema // Set schema context
