@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/Grandbusta/jone/internal/term"
 	"github.com/spf13/cobra"
 )
 
@@ -20,7 +21,7 @@ func migrateListJone(cmd *cobra.Command, args []string) {
 		Command: "migrate:list",
 	}
 	if err := runMigrations(execParams); err != nil {
-		fmt.Printf("Error listing migrations: %v\n", err)
+		fmt.Println(term.RedText(fmt.Sprintf("Error listing migrations: %v", err)))
 		os.Exit(1)
 	}
 }

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/Grandbusta/jone/internal/term"
 	"github.com/spf13/cobra"
 )
 
@@ -28,7 +29,7 @@ func migrateDownJone(cmd *cobra.Command, args []string) {
 		},
 	}
 	if err := runMigrations(execParams); err != nil {
-		fmt.Printf("Error rolling back migrations: %v\n", err)
+		fmt.Println(term.RedText(fmt.Sprintf("Error rolling back migrations: %v", err)))
 		os.Exit(1)
 	}
 }

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/Grandbusta/jone/internal/term"
 	"github.com/spf13/cobra"
 )
 
@@ -28,7 +29,7 @@ func migrateUpJone(cmd *cobra.Command, args []string) {
 		},
 	}
 	if err := runMigrations(execParams); err != nil {
-		fmt.Printf("Error running migration: %v\n", err)
+		fmt.Println(term.RedText(fmt.Sprintf("Error running migration: %v", err)))
 		os.Exit(1)
 	}
 }

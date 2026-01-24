@@ -60,7 +60,7 @@ func RunLatest(p RunParams) error {
 	}
 
 	if len(pending) == 0 {
-		fmt.Println("No pending migrations")
+		fmt.Println(term.YellowText("No pending migrations"))
 		return nil
 	}
 
@@ -71,7 +71,7 @@ func RunLatest(p RunParams) error {
 	}
 	batch := lastBatch + 1
 
-	fmt.Printf("Running %d migration(s) in batch %d...\n", len(pending), batch)
+	fmt.Println(term.CyanText(fmt.Sprintf("Running %d migration(s) in batch %d...", len(pending), batch)))
 
 	// Run each pending migration in a transaction
 	for _, reg := range pending {
@@ -80,7 +80,7 @@ func RunLatest(p RunParams) error {
 		}
 	}
 
-	fmt.Println("All migrations completed successfully")
+	fmt.Println(term.GreenText("✓ All migrations completed successfully"))
 	return nil
 }
 
@@ -192,7 +192,7 @@ func RunUp(p RunParams) error {
 			return fmt.Errorf("migration %s not found in registry", targetName)
 		}
 		if appliedSet[targetName] {
-			fmt.Printf("Migration %s already applied\n", targetName)
+			fmt.Println(term.YellowText(fmt.Sprintf("Migration %s already applied", targetName)))
 			return nil
 		}
 		targetReg = reg
@@ -205,7 +205,7 @@ func RunUp(p RunParams) error {
 			}
 		}
 		if len(pending) == 0 {
-			fmt.Println("No pending migrations")
+			fmt.Println(term.YellowText("No pending migrations"))
 			return nil
 		}
 		targetReg = pending[0]
@@ -216,7 +216,7 @@ func RunUp(p RunParams) error {
 		return err
 	}
 
-	fmt.Println("Migration completed successfully")
+	fmt.Println(term.GreenText("✓ Migration completed successfully"))
 	return nil
 }
 
@@ -239,7 +239,7 @@ func runMigration(p RunParams, tracker *Tracker, reg Registration, batch int) er
 		return fmt.Errorf("committing migration %s: %w", reg.Name, err)
 	}
 
-	fmt.Printf("Migrated: %s\n", reg.Name)
+	fmt.Println(term.GreenText(fmt.Sprintf("  ✓ Migrated: %s", reg.Name)))
 	return nil
 }
 
@@ -260,7 +260,7 @@ func RunDown(p RunParams) error {
 	}
 
 	if len(applied) == 0 {
-		fmt.Println("No migrations to rollback")
+		fmt.Println(term.YellowText("No migrations to rollback"))
 		return nil
 	}
 
@@ -289,7 +289,7 @@ func RunDown(p RunParams) error {
 		return err
 	}
 
-	fmt.Println("Rollback completed successfully")
+	fmt.Println(term.GreenText("✓ Rollback completed successfully"))
 	return nil
 }
 
@@ -326,7 +326,7 @@ func rollbackLastBatch(p RunParams, tracker *Tracker, regMap map[string]Registra
 	}
 
 	if lastBatch == 0 {
-		fmt.Println("Nothing to rollback.")
+		fmt.Println(term.YellowText("Nothing to rollback."))
 		return nil
 	}
 
@@ -336,11 +336,11 @@ func rollbackLastBatch(p RunParams, tracker *Tracker, regMap map[string]Registra
 	}
 
 	if len(batchMigrations) == 0 {
-		fmt.Println("Nothing to rollback.")
+		fmt.Println(term.YellowText("Nothing to rollback."))
 		return nil
 	}
 
-	fmt.Printf("Rolling back %d migration(s) from batch %d...\n", len(batchMigrations), lastBatch)
+	fmt.Println(term.CyanText(fmt.Sprintf("Rolling back %d migration(s) from batch %d...", len(batchMigrations), lastBatch)))
 
 	for _, name := range batchMigrations {
 		if err := rollbackMigration(p, tracker, regMap, name); err != nil {
@@ -348,7 +348,7 @@ func rollbackLastBatch(p RunParams, tracker *Tracker, regMap map[string]Registra
 		}
 	}
 
-	fmt.Println("Rollback completed successfully")
+	fmt.Println(term.GreenText("✓ Rollback completed successfully"))
 	return nil
 }
 
@@ -359,11 +359,11 @@ func rollbackAll(p RunParams, tracker *Tracker, regMap map[string]Registration) 
 	}
 
 	if len(applied) == 0 {
-		fmt.Println("Nothing to rollback.")
+		fmt.Println(term.YellowText("Nothing to rollback."))
 		return nil
 	}
 
-	fmt.Printf("Rolling back all %d migration(s)...\n", len(applied))
+	fmt.Println(term.CyanText(fmt.Sprintf("Rolling back all %d migration(s)...", len(applied))))
 
 	// Roll back in reverse order
 	for i := len(applied) - 1; i >= 0; i-- {
@@ -372,7 +372,7 @@ func rollbackAll(p RunParams, tracker *Tracker, regMap map[string]Registration) 
 		}
 	}
 
-	fmt.Println("Rollback completed successfully")
+	fmt.Println(term.GreenText("✓ Rollback completed successfully"))
 	return nil
 }
 
@@ -399,7 +399,7 @@ func rollbackMigration(p RunParams, tracker *Tracker, regMap map[string]Registra
 		return fmt.Errorf("committing rollback %s: %w", name, err)
 	}
 
-	fmt.Printf("Rolled back: %s\n", name)
+	fmt.Println(term.GreenText(fmt.Sprintf("  ✓ Rolled back: %s", name)))
 	return nil
 }
 
@@ -423,7 +423,7 @@ func runUpDryRun(p RunParams) error {
 	} else {
 		// First pending (just use first registered for dry-run)
 		if len(p.Registrations) == 0 {
-			fmt.Println("No migrations registered")
+			fmt.Println(term.YellowText("No migrations registered"))
 			return nil
 		}
 		targetReg = p.Registrations[0]
@@ -453,7 +453,7 @@ func runDownDryRun(p RunParams) error {
 		// In dry-run we can't check DB, so use last registered
 		targetName = p.Registrations[len(p.Registrations)-1].Name
 	} else {
-		fmt.Println("No migrations registered")
+		fmt.Println(term.YellowText("No migrations registered"))
 		return nil
 	}
 
@@ -480,7 +480,7 @@ func runRollbackDryRun(p RunParams) error {
 	}
 
 	if len(p.Registrations) == 0 {
-		fmt.Println("No migrations registered")
+		fmt.Println(term.YellowText("No migrations registered"))
 		return nil
 	}
 

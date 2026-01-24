@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/Grandbusta/jone/internal/term"
 	"github.com/spf13/cobra"
 )
 
@@ -29,7 +30,7 @@ func migrateRollback(cmd *cobra.Command, args []string) {
 		},
 	}
 	if err := runMigrations(execParams); err != nil {
-		fmt.Printf("Error running migrations: %v\n", err)
+		fmt.Println(term.RedText(fmt.Sprintf("Error running migrations: %v", err)))
 		os.Exit(1)
 	}
 }
