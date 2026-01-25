@@ -259,6 +259,10 @@ func Down(s *jone.Schema) {
 | MySQL | `github.com/go-sql-driver/mysql` | 🚧 In Progress |
 | SQLite | `github.com/mattn/go-sqlite3` | 🚧 In Progress |
 
+## Contributing
+
+Contributions are welcome! Please see our [Contributing Guide](CONTRIBUTING.md) for more details.
+
 ## License
 
 MIT
