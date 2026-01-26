@@ -11,6 +11,8 @@ type JoneFileData struct {
 const jonefileTemplateContent = `package jone
 
 import (
+	"time"
+
 	"{{ .RuntimePackage }}"
 
 {{- if eq .Database "mysql" }}
@@ -50,6 +52,12 @@ var Config = jone.Config{
 		Database: "my_db",
 	},
 {{- end }}
+	Pool: jone.Pool{
+		MaxOpenConns:    10,
+		MaxIdleConns:    5,
+		ConnMaxLifetime: 30 * time.Minute,
+		ConnMaxIdleTime: 5 * time.Minute,
+	},
 	Migrations: jone.Migrations{
 		TableName: "jone_migrations",
 	},
