@@ -88,7 +88,12 @@ var Config = jone.Config{
 Jone leverages Go's built-in `database/sql` connection pool. You can configure pool behavior by adding a `Pool` field to your config:
 
 ```go
-import "time"
+import (
+    "time"
+
+    "github.com/Grandbusta/jone"
+    _ "github.com/jackc/pgx/v5/stdlib" // Driver
+)
 
 var Config = jone.Config{
     Client: "postgresql",
