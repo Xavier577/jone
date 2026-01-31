@@ -1,8 +1,8 @@
 # Jone
 
-A Go database migration tool with a fluent schema builder. Query builder coming soon!
+A Go database migration tool with a fluent schema builder. Supports PostgreSQL and MySQL.
 
-## Installation
+## 📦 Installation
 
 **1. Install the CLI** (one-time, adds `jone` command to your system):
 
@@ -16,7 +16,7 @@ go install github.com/Grandbusta/jone/cmd/jone@latest
 go get github.com/Grandbusta/jone
 ```
 
-## Quick Start
+## 🚀 Quick Start
 
 ```bash
 # Initialize jone in your project (defaults to postgres)
@@ -32,7 +32,7 @@ jone migrate:latest
 jone migrate:list
 ```
 
-## CLI Commands
+## 💻 CLI Commands
 
 | Command | Description |
 |---------|-------------|
@@ -56,16 +56,17 @@ jone migrate:list
 **`jone migrate:rollback`**
 - `--all`, `-a` — Rollback all migrations (not just last batch)
 
-## Configuration
+## ⚙️ Configuration
 
 After running `jone init`, edit `jone/jonefile.go`:
 
+**PostgreSQL:**
 ```go
 package jone
 
 import (
     "github.com/Grandbusta/jone"
-    _ "github.com/jackc/pgx/v5/stdlib" // Driver
+    _ "github.com/jackc/pgx/v5/stdlib" // PostgreSQL driver
 )
 
 var Config = jone.Config{
@@ -83,7 +84,31 @@ var Config = jone.Config{
 }
 ```
 
-## Connection Pooling
+**MySQL:**
+```go
+package jone
+
+import (
+    "github.com/Grandbusta/jone"
+    _ "github.com/go-sql-driver/mysql" // MySQL driver
+)
+
+var Config = jone.Config{
+    Client: "mysql",
+    Connection: jone.Connection{
+        Host:     "localhost",
+        Port:     "3306",
+        User:     "root",
+        Password: "password",
+        Database: "my_db",
+    },
+    Migrations: jone.Migrations{
+        TableName: "jone_migrations",
+    },
+}
+```
+
+## 🔗 Connection Pooling
 
 Jone leverages Go's built-in `database/sql` connection pool. You can configure pool behavior by adding a `Pool` field to your config:
 
@@ -118,7 +143,7 @@ var Config = jone.Config{
 
 All fields are optional. Omitting `Pool` (or using zero values) preserves the `database/sql` defaults.
 
-## Schema Builder
+## 🏗️ Schema Builder
 
 ### Creating Tables
 
@@ -156,7 +181,6 @@ func Up(s *jone.Schema) {
 | `JSON(name)` | JSON |
 | `JSONB(name)` | JSONB |
 | `Binary(name)` | BYTEA / BLOB |
-| `Enum(name, ...values)` | ENUM type |
 
 ### Column Modifiers
 
@@ -250,7 +274,7 @@ s.Raw("INSERT INTO settings (key, value) VALUES ($1, $2)", "version", "1.0")
 s.Raw("UPDATE users SET status = $1 WHERE created_at < $2", "legacy", "2020-01-01")
 ```
 
-## Migration Example
+## 📝 Migration Example
 
 ```go
 // jone/migrations/20260123000000_create_users/migration.go
@@ -286,18 +310,18 @@ func Down(s *jone.Schema) {
 }
 ```
 
-## Supported Databases
+## 🗄️ Supported Databases
 
 | Database | Driver Package | Status |
 |----------|----------------|--------|
 | PostgreSQL | `github.com/jackc/pgx/v5/stdlib` | ✅ Supported |
-| MySQL | `github.com/go-sql-driver/mysql` | 🚧 In Progress |
-| SQLite | `github.com/mattn/go-sqlite3` | 🚧 In Progress |
+| MySQL | `github.com/go-sql-driver/mysql` | ✅ Supported |
+| SQLite | `github.com/mattn/go-sqlite3` | 🚧 Planned |
 
-## Contributing
+## 🤝 Contributing
 
 Contributions are welcome! Please see our [Contributing Guide](CONTRIBUTING.md) for more details.
 
-## License
+## 📄 License
 
 MIT
